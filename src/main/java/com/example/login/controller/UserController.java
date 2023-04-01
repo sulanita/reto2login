@@ -19,8 +19,12 @@ public class UserController {
 
     public ResponseEntity<String> login(@RequestBody User user) {
         if (userService.validarLogin(user.getUsername(), user.getPassword())) {
-            return ResponseEntity.ok("Inicio de sesión exitoso");
-        } else {
+            return ResponseEntity.ok("Ingreso exitoso");
+                    }
+        else if(userService.validarBloqueo(user.getUsername(), user.getPassword())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Usuario bloqueado");
+        }
+        else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Nombre de usuario o contraseña incorrectos");
         }
 

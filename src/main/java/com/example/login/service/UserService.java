@@ -13,23 +13,20 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+
     public boolean validarLogin(String username, String password) {
         User user = userRepository.findByUsername(username);
-        if (user == null) {
+
+        if (!user.getUsername().equals(username)) {
             return false;
         }
-        if (user.getBloqueado()==1){
-            return false;
-        }
+
         else {
             if (!user.getPassword().equals(password)) {
                 user.incrementarIntentosFallidos();
                 userRepository.update(user);
-                if (user.getIntentosFallidos() >= 3) {
-                    user.isBloqueado();
-                    userRepository.updateLock(user);
-                }
-                return true;
+                validarBloqueo(username, password);
+                return false;
             }
         }
 
@@ -41,10 +38,17 @@ public class UserService {
         return true;
     }
 
-    private ResponseEntity<String> validarBloqueo(User user) {
-        if (user.getBloqueado()==1) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("usuario bloqueado");
+    public boolean validarBloqueo(String username, String password) {
+        User user = userRepository.findByUsername(username);
+
+        if (user.getBloqueado() == 1) {
+            return true;
         }
-        return null;
+        if (user.getIntentosFallidos() >= 3) {
+            user.isBloqueado();
+            userRepository.updateLock(user);
+        }
+        return false;
+
     }
 }
