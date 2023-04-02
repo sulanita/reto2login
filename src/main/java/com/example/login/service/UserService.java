@@ -7,40 +7,56 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class UserService {
+
+    public enum EstadoAutenticacion {
+        ok,
+        fail,
+        bloqueado,
+
+    }
 
     @Autowired
     private UserRepository userRepository;
 
 
-    public boolean validarLogin(String username, String password) {
-        User user = userRepository.findByUsername(username);
-
-        if (!user.getUsername().equals(username)) {
-            return false;
+    public EstadoAutenticacion validarLogin(String username, String password) {
+        Optional<User> opUser = userRepository.findByUsername(username);
+        User user;
+        if(!opUser.isPresent()){
+            return EstadoAutenticacion.fail;
         }
-
         else {
-            if (!user.getPassword().equals(password)) {
+            user=opUser.get();
+            if(user.getBloqueado()==1){
+                return EstadoAutenticacion.bloqueado;
+            }
+            else if (!user.getPassword().equals(password)) {
                 user.incrementarIntentosFallidos();
                 userRepository.update(user);
                 validarBloqueo(username, password);
-                return false;
+                return EstadoAutenticacion.fail;
+            }else{
+                user.resetIntentosFallidos();
+                userRepository.update(user);
+                user.resetBloqueo();
+                userRepository.updateLock(user);
+                return EstadoAutenticacion.ok;
             }
         }
 
-
-        user.resetIntentosFallidos();
-        userRepository.update(user);
-        user.resetBloqueo();
-        userRepository.updateLock(user);
-        return true;
     }
 
     public boolean validarBloqueo(String username, String password) {
-        User user = userRepository.findByUsername(username);
-
+        Optional<User> opUser = userRepository.findByUsername(username);
+        User user;
+        if(!opUser.isPresent()){
+            return false;
+        }
+        user=opUser.get();
         if (user.getBloqueado() == 1) {
             return true;
         }
@@ -50,5 +66,9 @@ public class UserService {
         }
         return false;
 
+    }
+    
+    public Optional<User> findByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 }
