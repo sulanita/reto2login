@@ -6,15 +6,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public class UserRepository {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public User findByUsername(String username) {
+    public Optional<User> findByUsername(String username) {
         String sql = "SELECT * FROM usuario2 WHERE username = ?";
-        return jdbcTemplate.queryForObject(sql, new Object[]{username}, new UserRowMapper());
+        return jdbcTemplate.query(sql, new Object[]{username},  new UserRowMapper()).stream().findFirst();
     }
 
     public void update(User user) {
